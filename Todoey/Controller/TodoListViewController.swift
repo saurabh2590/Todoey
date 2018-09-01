@@ -15,6 +15,8 @@ class TodoListViewController: UITableViewController {
      let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         loadItems()
     }
@@ -37,7 +39,7 @@ class TodoListViewController: UITableViewController {
         return itemArray.count
     }
     
-    //Mark - Tableview delegate Methods
+    //MARK - Tableview delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         // context.delete(itemArray[indexPath.row])
         // itemArray.remove(at: indexPath.row)
@@ -47,7 +49,7 @@ class TodoListViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 
-    //Mark - Add New Items
+    //MARK - Add New Items
     @IBAction func addButtonClicked(_ sender: UIBarButtonItem) {
         var textField = UITextField()
         let alert = UIAlertController(title: "Add new todo item", message: "", preferredStyle: .alert)
@@ -72,7 +74,7 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
-    //Mark - Save Data
+    //MARK - Save Data
     func saveData() {
         
         do {
@@ -83,12 +85,34 @@ class TodoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    func loadItems() {
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
         do {
             itemArray = try context.fetch(request)
         } catch {
             print("Error fetching the data from coreData \(error)")
+        }
+        tableView.reloadData()
+    }
+
+}
+
+//MARK: - Search bar methods
+extension TodoListViewController: UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        // NS Predicate: [cd] disable case & diatric sensitive search
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        request.sortDescriptors?.append(NSSortDescriptor(key: "title", ascending: true))
+        loadItems(with: request )
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+            
         }
     }
 }
